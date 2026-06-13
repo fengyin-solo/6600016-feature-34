@@ -8,13 +8,28 @@ const ALL_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 function loadPinnedChars(): string[] {
   try {
+    if (typeof localStorage === 'undefined') return []
     const saved = localStorage.getItem(PINNED_CHARS_KEY)
     if (saved) {
       const arr = JSON.parse(saved)
-      return Array.isArray(arr) ? arr.filter(c => ALL_CHARS.includes(c)) : []
+      if (Array.isArray(arr)) {
+        const valid = arr.filter(c => typeof c === 'string' && ALL_CHARS.includes(c))
+        return [...new Set(valid)]
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Failed to load pinned chars:', e)
+  }
   return []
+}
+
+function savePinnedChars(chars: string[]) {
+  try {
+    if (typeof localStorage === 'undefined') return
+    localStorage.setItem(PINNED_CHARS_KEY, JSON.stringify(chars))
+  } catch (e) {
+    console.warn('Failed to save pinned chars:', e)
+  }
 }
 
 export const useMorseStore = defineStore('morse', () => {
@@ -35,7 +50,7 @@ export const useMorseStore = defineStore('morse', () => {
   let currentOscillator: OscillatorNode | null = null
 
   watch(pinnedChars, (val) => {
-    localStorage.setItem(PINNED_CHARS_KEY, JSON.stringify(val))
+    savePinnedChars(val)
   }, { deep: true })
 
   const dotDuration = computed(() => 1200 / wpm.value)
@@ -88,11 +103,12 @@ export const useMorseStore = defineStore('morse', () => {
   }
 
   function togglePin(char: string) {
+    if (!ALL_CHARS.includes(char)) return
     const idx = pinnedChars.value.indexOf(char)
     if (idx >= 0) {
-      pinnedChars.value.splice(idx, 1)
+      pinnedChars.value = pinnedChars.value.filter(c => c !== char)
     } else {
-      pinnedChars.value.push(char)
+      pinnedChars.value = [...pinnedChars.value, char]
     }
   }
 
@@ -101,7 +117,7 @@ export const useMorseStore = defineStore('morse', () => {
   }
 
   function generateQuiz() {
-    const pool = pinnedChars.value.length > 0 ? pinnedChars.value.join('') : ALL_CHARS
+    const pool = pinnedChars.value.length > 0 ? pinnedChars.value : ALL_CHARS.split('')
     quizChar.value = pool[Math.floor(Math.random() * pool.length)]
     userAnswer.value = ''
   }
