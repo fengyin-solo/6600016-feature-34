@@ -1,7 +1,21 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { MORSE_TABLE, REVERSE_TABLE, textToMorse, morseToText } from '../utils/morse-code'
 import type { TrainMode, HistoryEntry } from '../types'
+
+const PINNED_CHARS_KEY = 'morse_pinned_chars'
+const ALL_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+function loadPinnedChars(): string[] {
+  try {
+    const saved = localStorage.getItem(PINNED_CHARS_KEY)
+    if (saved) {
+      const arr = JSON.parse(saved)
+      return Array.isArray(arr) ? arr.filter(c => ALL_CHARS.includes(c)) : []
+    }
+  } catch (e) {}
+  return []
+}
 
 export const useMorseStore = defineStore('morse', () => {
   const inputText = ref('')
@@ -16,8 +30,13 @@ export const useMorseStore = defineStore('morse', () => {
   const userAnswer = ref('')
   const score = ref({ correct: 0, total: 0 })
   const isPlaying = ref(false)
+  const pinnedChars = ref<string[]>(loadPinnedChars())
   let audioCtx: AudioContext | null = null
   let currentOscillator: OscillatorNode | null = null
+
+  watch(pinnedChars, (val) => {
+    localStorage.setItem(PINNED_CHARS_KEY, JSON.stringify(val))
+  }, { deep: true })
 
   const dotDuration = computed(() => 1200 / wpm.value)
 
@@ -68,9 +87,22 @@ export const useMorseStore = defineStore('morse', () => {
     decodedText.value = morseToText(inputText.value)
   }
 
+  function togglePin(char: string) {
+    const idx = pinnedChars.value.indexOf(char)
+    if (idx >= 0) {
+      pinnedChars.value.splice(idx, 1)
+    } else {
+      pinnedChars.value.push(char)
+    }
+  }
+
+  function isPinned(char: string): boolean {
+    return pinnedChars.value.includes(char)
+  }
+
   function generateQuiz() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    quizChar.value = chars[Math.floor(Math.random() * chars.length)]
+    const pool = pinnedChars.value.length > 0 ? pinnedChars.value.join('') : ALL_CHARS
+    quizChar.value = pool[Math.floor(Math.random() * pool.length)]
     userAnswer.value = ''
   }
 
@@ -93,7 +125,7 @@ export const useMorseStore = defineStore('morse', () => {
   return {
     inputText, morseOutput, decodedText, wpm, frequency, volume,
     trainMode, history, quizChar, userAnswer, score, isPlaying,
-    dotDuration, encode, decode, playMorse, playTone,
-    generateQuiz, checkAnswer, resetScore
+    pinnedChars, dotDuration, encode, decode, playMorse, playTone,
+    generateQuiz, checkAnswer, resetScore, togglePin, isPinned
   }
 })

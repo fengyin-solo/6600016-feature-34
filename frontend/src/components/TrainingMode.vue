@@ -2,14 +2,32 @@
   <div class="grid grid-cols-2 gap-4">
     <!-- Quiz Panel -->
     <div class="bg-gray-900 rounded-xl p-4">
-      <h3 class="text-amber-300 font-bold mb-3">听音/看码 猜字符</h3>
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-amber-300 font-bold">听音/看码 猜字符</h3>
+        <span v-if="store.pinnedChars.length > 0" class="text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded">
+          📌 优先从 {{ store.pinnedChars.length }} 个置顶字符出题
+        </span>
+      </div>
       <div v-if="!store.quizChar" class="text-center py-8">
         <button @click="store.generateQuiz()" class="bg-amber-500 text-black px-6 py-3 rounded-lg text-lg hover:bg-amber-400">
           开始训练
         </button>
+        <p v-if="store.pinnedChars.length > 0" class="mt-3 text-gray-400 text-sm">
+          将从 {{ store.pinnedChars.length }} 个置顶字符中随机出题
+        </p>
+        <p v-else class="mt-3 text-gray-400 text-sm">
+          从全部字母数字中随机出题，在速查表中置顶常用字符可优先练习
+        </p>
       </div>
       <div v-else class="flex flex-col items-center gap-4">
-        <div class="text-8xl font-bold text-amber-400">{{ store.quizChar }}</div>
+        <div class="flex items-center gap-3">
+          <div class="text-8xl font-bold text-amber-400">{{ store.quizChar }}</div>
+          <button @click="store.togglePin(store.quizChar)"
+            class="text-2xl hover:scale-110 transition-transform"
+            :title="store.isPinned(store.quizChar) ? '取消置顶' : '置顶该字符'">
+            {{ store.isPinned(store.quizChar) ? '📌' : '☆' }}
+          </button>
+        </div>
         <button @click="store.playMorse(MORSE_TABLE[store.quizChar])" :disabled="store.isPlaying"
           class="bg-green-600 px-4 py-2 rounded hover:bg-green-500 disabled:opacity-50">
           {{ store.isPlaying ? '播放中...' : '🔊 播放音频' }}

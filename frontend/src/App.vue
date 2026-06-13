@@ -43,13 +43,42 @@
     </div>
 
     <!-- Reference Table -->
-    <div v-if="activeTab === 'ref'" class="bg-gray-900 rounded-xl p-4">
-      <h3 class="text-amber-300 font-bold mb-3">莫尔斯码速查表</h3>
-      <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
-        <div v-for="(code, char) in morseTable" :key="char"
-          class="bg-gray-800 rounded p-2 text-center">
-          <div class="text-xl font-bold text-amber-400">{{ char }}</div>
-          <div class="font-mono text-green-400 text-sm">{{ code }}</div>
+    <div v-if="activeTab === 'ref'" class="bg-gray-900 rounded-xl p-4 flex flex-col gap-4">
+      <h3 class="text-amber-300 font-bold mb-1">莫尔斯码速查表</h3>
+
+      <!-- Pinned Section -->
+      <div v-if="store.pinnedChars.length > 0" class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 text-sm font-medium">📌 置顶字符</span>
+          <span class="text-gray-500 text-xs">（训练时优先出题）</span>
+        </div>
+        <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+          <div v-for="char in store.pinnedChars" :key="'pin-' + char"
+            class="bg-amber-900/30 border border-amber-500/50 rounded p-2 text-center relative group">
+            <button @click="store.togglePin(char)"
+              class="absolute top-1 right-1 text-amber-400 text-xs opacity-100 hover:text-amber-200"
+              title="取消置顶">📌</button>
+            <div class="text-xl font-bold text-amber-400">{{ char }}</div>
+            <div class="font-mono text-green-400 text-sm">{{ morseTable[char] }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Chars Section -->
+      <div class="flex flex-col gap-2">
+        <span class="text-gray-400 text-sm font-medium">全部字符（点击星标置顶）</span>
+        <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+          <div v-for="(code, char) in morseTable" :key="char"
+            class="bg-gray-800 rounded p-2 text-center relative group">
+            <button @click="store.togglePin(char)"
+              class="absolute top-1 right-1 text-gray-500 text-xs opacity-0 group-hover:opacity-100 hover:text-amber-400 transition-opacity"
+              :class="{ 'opacity-100 text-amber-400': store.isPinned(char) }"
+              :title="store.isPinned(char) ? '取消置顶' : '置顶'">
+              {{ store.isPinned(char) ? '📌' : '☆' }}
+            </button>
+            <div class="text-xl font-bold text-amber-400">{{ char }}</div>
+            <div class="font-mono text-green-400 text-sm">{{ code }}</div>
+          </div>
         </div>
       </div>
     </div>
